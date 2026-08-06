@@ -17,13 +17,15 @@ uploaded_file = str_app.file_uploader("בחר קובץ אודיו (mp3, wav, m4a
 if uploaded_file is not None:
     if str_app.button("התחל תמלול"):
         with str_app.spinner("ה-AI מתמלל את הקובץ שלך כעת... אנא המתן"):
-            # שמירה זמנית של הקובץ שהועלה
-            with open("temp_audio.mp3", "wb") as f:
+            
+            # תיקון השגיאה: שמירת הקובץ בשם אנגלי קבוע ללא תלות בשם המקורי בעברית
+            temp_filename = "temp_audio_file.mp3"
+            with open(temp_filename, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
             try:
                 # שליחה ל-Whisper
-                with open("temp_audio.mp3", "rb") as audio_file:
+                with open(temp_filename, "rb") as audio_file:
                     transcription = client.audio.transcriptions.create(
                         model="whisper-1", 
                         file=audio_file,
@@ -43,10 +45,11 @@ if uploaded_file is not None:
                 run.font.name = 'Arial'
                 run.font.size = docx.shared.Pt(12)
                 
-                doc.save("output.docx")
+                output_filename = "output_transcription.docx"
+                doc.save(output_filename)
                 
                 # כפתור להורדת הקובץ המוכן
-                with open("output.docx", "rb") as word_file:
+                with open(output_filename, "rb") as word_file:
                     str_app.download_button(
                         label="📥 הורד קובץ Word מוכן",
                         data=word_file,
@@ -55,5 +58,12 @@ if uploaded_file is not None:
                     )
                 str_app.success("התמלול הסתיים בהצלחה!")
                 
+                # ניקוי קבצים זמניים מהשרת
+                if os.path.exists(temp_filename):
+                    os.remove(temp_filename)
+                if os.path.exists(output_filename):
+                    os.remove(output_filename)
+                    
             except Exception as e:
                 str_app.error(f"שגיאה בתהליך: {e}")
+   
